@@ -101,12 +101,12 @@
     state: directory
 
 - name: Generate static files
-  command: "{{ python }} {{ manager }} collectstatic --noinput"
+  command: "{{ python }} {{ manage }} collectstatic --noinput"
   become: true
   become_user: "{{ alliance_auth.user }}"
 
 - name: Check config
-  command: "{{ python }} {{ manager }} check"
+  command: "{{ python }} {{ manage }} check"
   become: true
   become_user: "{{ alliance_auth.user }}"
 
