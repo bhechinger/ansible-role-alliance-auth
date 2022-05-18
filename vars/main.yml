@@ -1,9 +1,17 @@
 ---
 # vars file for ansible-role-alliance-auth
 home_dir: "/home/{{ alliance_auth.user }}"
+lock_dir: "{{ home_dir }}/lock"
+app_dir: "{{ home_dir }}/{{ alliance_auth.app_name }}"
 venv_dir: "{{ home_dir }}/venv"
 venv_bin: "{{ venv_dir }}/bin"
 python: "{{ venv_dir }}/bin/python"
 allianceauth: "{{ venv_dir }}/bin/allianceauth"
 celery: "{{ venv_dir }}/bin/celery"
+gunicorn: "{{ venv_dir }}/bin/gunicorn"
 manage: "{{ home_dir }}/{{ alliance_auth.app_name }}/manage.py"
+
+data_load_jobs:
+  - "structures_load_structures"
+  - "eveuniverse_load_data map"
+  - "structuretimers_load_eve"

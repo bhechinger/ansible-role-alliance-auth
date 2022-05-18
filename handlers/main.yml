@@ -1,2 +1,12 @@
 ---
 # handlers file for ansible-role-alliance-auth
+- name: restart supervisor
+  command: supervisorctl reload
+
+- name: restart apps
+  shell: until supervisorctl status > /dev/null; do sleep 1; done && supervisorctl restart all
+
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted

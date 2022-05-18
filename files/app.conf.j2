@@ -1,21 +1,21 @@
 [program:beat]
-command={{ venv_bin }}/celery -A {{ app_name }} beat
-directory={{ directory }}
-user={{ user }}
-stdout_logfile={{ directory }}/log/beat.log
-stderr_logfile={{ directory }}/log/beat.log
+command={{ celery }} -A {{ alliance_auth.app_name }} beat
+directory={{ app_dir }}
+user={{ alliance_auth.user }}
+stdout_logfile={{ app_dir }}/log/beat.log
+stderr_logfile={{ app_dir }}/log/beat.log
 autostart=true
 autorestart=true
 startsecs=10
 priority=998
 
 [program:worker]
-command={{ venv_bin }}/celery -A {{ app_name }} worker -l info --max-memory-per-child 262144
-directory={{ directory }}
-user={{ user }}
+command={{ celery }} -A {{ alliance_auth.app_name }} worker -l info --max-memory-per-child 262144
+directory={{ app_dir }}
+user={{ alliance_auth.user }}
 numprocs=1
-stdout_logfile={{ directory }}/log/worker.log
-stderr_logfile={{ directory }}/log/worker.log
+stdout_logfile={{ app_dir }}/log/worker.log
+stderr_logfile={{ app_dir }}/log/worker.log
 autostart=true
 autorestart=true
 startsecs=10
@@ -25,16 +25,16 @@ priority=998
 
 
 [program:gunicorn]
-user={{ user }}
-directory={{ directory }}
-command={{ venv_bin }}/gunicorn {{ app_name }}.wsgi --workers=3 --timeout 120
-stdout_logfile={{ directory }}/log/gunicorn.log
-stderr_logfile={{ directory }}/log/gunicorn.log
+user={{ alliance_auth.user }}
+directory={{ app_dir }}
+command={{ gunicorn }} {{ alliance_auth.app_name }}.wsgi --workers=3 --timeout 120
+stdout_logfile={{ app_dir }}/log/gunicorn.log
+stderr_logfile={{ app_dir }}/log/gunicorn.log
 autostart=true
 autorestart=true
 stopsignal=INT
 
 
-[group:{{ app_name }}]
+[group:{{ alliance_auth.app_name }}]
 programs=beat,worker,gunicorn
 priority=999

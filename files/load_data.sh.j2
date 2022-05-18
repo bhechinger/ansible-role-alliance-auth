@@ -1,17 +1,13 @@
 #!/usr/bin/env bash
 
-LOCKDIR={{ home_dir }}/load_data.lock
-mkdir -p "${LOCKDIR}"
-
 cd {{ home_dir }}
 
-{% for task in tasks %}
-if [ ! -f "${LOCKDIR}/{{ task }}" ]; then
-  echo "Running {{ task }}"
-  echo y | {{ python }} {{ manage }} {{ task }}
-  touch ${LOCKDIR}/{{ task }}
-else
-  echo "Skipping {{ task }}"
-fi
-
-{% endfor %}
+for task in "$@"; do
+  if [ ! -f "{{ lock_dir }}/${task}" ]; then
+    echo "Loading ${task}"
+    echo y | {{ python }} {{ manage }} ${task}
+    touch "{{ lock_dir }}/${task}"
+  else
+    echo "Skipping ${task}"
+  fi
+done
