@@ -1,2 +1,7 @@
 ---
 # defaults file for ansible-role-alliance-auth
+alliance_auth:
+  user: allianceauth
+  email:
+    port: 587
+    tls: true

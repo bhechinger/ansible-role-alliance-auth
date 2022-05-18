@@ -1,0 +1,40 @@
+[program:beat]
+command={{ venv_bin }}/celery -A {{ app_name }} beat
+directory={{ directory }}
+user={{ user }}
+stdout_logfile={{ directory }}/log/beat.log
+stderr_logfile={{ directory }}/log/beat.log
+autostart=true
+autorestart=true
+startsecs=10
+priority=998
+
+[program:worker]
+command={{ venv_bin }}/celery -A {{ app_name }} worker -l info --max-memory-per-child 262144
+directory={{ directory }}
+user={{ user }}
+numprocs=1
+stdout_logfile={{ directory }}/log/worker.log
+stderr_logfile={{ directory }}/log/worker.log
+autostart=true
+autorestart=true
+startsecs=10
+stopwaitsecs = 600
+killasgroup=true
+priority=998
+
+
+[program:gunicorn]
+user={{ user }}
+directory={{ directory }}
+command={{ venv_bin }}/gunicorn {{ app_name }}.wsgi --workers=3 --timeout 120
+stdout_logfile={{ directory }}/log/gunicorn.log
+stderr_logfile={{ directory }}/log/gunicorn.log
+autostart=true
+autorestart=true
+stopsignal=INT
+
+
+[group:{{ app_name }}]
+programs=beat,worker,gunicorn
+priority=999

@@ -1,2 +1,9 @@
 ---
 # vars file for ansible-role-alliance-auth
+home_dir: "/home/{{ alliance_auth.user }}"
+venv_dir: "{{ home_dir }}/venv"
+venv_bin: "{{ venv_dir }}/bin"
+python: "{{ venv_dir }}/bin/python"
+allianceauth: "{{ venv_dir }}/bin/allianceauth"
+celery: "{{ venv_dir }}/bin/celery"
+manage: "{{ home_dir }}/{{ alliance_auth.app_name }}/manage.py"

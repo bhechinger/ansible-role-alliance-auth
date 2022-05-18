@@ -1,0 +1,81 @@
+# Every setting in base.py can be overloaded by redefining it here.
+from .base import *
+
+# These are required for Django to function properly. Don't touch.
+ROOT_URLCONF = '{{ alliance_auth.app_name }}.urls'
+WSGI_APPLICATION = '{{ alliance_auth.app_name }}.wsgi.application'
+SECRET_KEY = 'django-insecure-r+0#_bjg@1+v@v9#qj3a3fs=qd0l-c-cjgo=a*r!tovd4nb+!@'
+
+# This is where css/images will be placed for your webserver to read
+STATIC_ROOT = "/var/www/{{ alliance_auth.app_name }}/static/"
+
+# Change this to change the name of the auth site displayed
+# in page titles and the site header.
+SITE_NAME = '{{ alliance_auth.app_name }}'
+
+# Change this to enable/disable debug mode, which displays
+# useful error messages but can leak sensitive data.
+DEBUG = False
+
+# Add any additional apps to this list.
+INSTALLED_APPS += [
+{% for app in alliance_auth.installed_apps %}
+'{{ app }}',
+{% endfor %}
+]
+
+# To change the logging level for extensions, uncomment the following line.
+# LOGGING['handlers']['extension_file']['level'] = 'DEBUG'
+
+
+# Enter credentials to use MySQL/MariaDB. Comment out to use sqlite3
+DATABASES['default'] = {
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': '{{ alliance_auth.db.name }}',
+    'USER': '{{ alliance_auth.db.user }}',
+    'PASSWORD': '{{ alliance_auth.db.password }}',
+    'HOST': '127.0.0.1',
+    'PORT': '3306',
+    'OPTIONS': {'charset': 'utf8mb4'},
+}
+
+# Register an application at https://developers.eveonline.com for Authentication
+# & API Access and fill out these settings. Be sure to set the callback URL
+# to https://example.com/sso/callback substituting your domain for example.com
+# Logging in to auth requires the publicData scope (can be overridden through the
+# LOGIN_TOKEN_SCOPES setting). Other apps may require more (see their docs).
+ESI_SSO_CLIENT_ID = '{{ alliance_auth.esi.clientId }}'
+ESI_SSO_CLIENT_SECRET = '{{ alliance_auth.esi.clientSecret }}'
+ESI_SSO_CALLBACK_URL = '{{ alliance_auth.esi.callbackURL }}'
+ESI_USER_CONTACT_EMAIL = '{{ alliance_auth.esi.email }}'
+
+# By default emails are validated before new users can log in.
+# It's recommended to use a free service like SparkPost or Elastic Email to send email.
+# https://www.sparkpost.com/docs/integrations/django/
+# https://elasticemail.com/resources/settings/smtp-api/
+# Set the default from email to something like 'noreply@example.com'
+# Email validation can be turned off by uncommenting the line below. This can break some services.
+# REGISTRATION_VERIFY_EMAIL = False
+EMAIL_HOST = '{{ alliance_auth.email.host }}'
+EMAIL_PORT = {{ alliance_auth.email.port }}
+EMAIL_HOST_USER = '{{ alliance_auth.email.user }}'
+EMAIL_HOST_PASSWORD = '{{ alliance_auth.email.password }}'
+EMAIL_USE_TLS = {{ alliance_auth.email.tls }}
+DEFAULT_FROM_EMAIL = '{{ alliance_auth.email.default_from }}'
+
+#######################################
+# Add any custom settings below here. #
+#######################################
+
+CELERYBEAT_SCHEDULE['structures_update_all_structures'] = {
+    'task': 'structures.tasks.update_all_structures',
+    'schedule': crontab(minute='*/30'),
+}
+CELERYBEAT_SCHEDULE['structures_fetch_all_notifications'] = {
+    'task': 'structures.tasks.fetch_all_notifications',
+    'schedule': crontab(minute='*/5'),
+}
+CELERYBEAT_SCHEDULE['structuretimers_housekeeping'] = {
+    'task': 'structuretimers.tasks.housekeeping',
+    'schedule': crontab(minute=0, hour=3),
+}
