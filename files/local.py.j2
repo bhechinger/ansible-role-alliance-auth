@@ -4,7 +4,7 @@ from .base import *
 # These are required for Django to function properly. Don't touch.
 ROOT_URLCONF = '{{ alliance_auth.app_name }}.urls'
 WSGI_APPLICATION = '{{ alliance_auth.app_name }}.wsgi.application'
-SECRET_KEY = 'django-insecure-r+0#_bjg@1+v@v9#qj3a3fs=qd0l-c-cjgo=a*r!tovd4nb+!@'
+SECRET_KEY = '{{ django_seed_value }}'
 
 # This is where css/images will be placed for your webserver to read
 STATIC_ROOT = "/var/www/{{ alliance_auth.app_name }}/static/"
@@ -19,7 +19,7 @@ DEBUG = False
 
 # Add any additional apps to this list.
 INSTALLED_APPS += [
-{% for app in alliance_auth.installed_apps %}
+{% for app in installed_apps %}
 '{{ app }}',
 {% endfor %}
 ]
@@ -78,4 +78,94 @@ CELERYBEAT_SCHEDULE['structures_fetch_all_notifications'] = {
 CELERYBEAT_SCHEDULE['structuretimers_housekeeping'] = {
     'task': 'structuretimers.tasks.housekeeping',
     'schedule': crontab(minute=0, hour=3),
+}
+# Fittings Module
+CELERYBEAT_SCHEDULE['fittings_update_types'] = {
+    'task': 'fittings.tasks.verify_server_version_and_update_types',
+    'schedule': crontab(minute=0, hour='12'),
+}
+# Mail Relay
+CELERYBEAT_SCHEDULE['mailrelay_forward_new_mails'] = {
+    'task': 'mailrelay.tasks.forward_new_mails',
+    'schedule': crontab(minute='*/5'),
+}
+# Kill Tracker
+CELERYBEAT_SCHEDULE['killtracker_run_killtracker'] = {
+    'task': 'killtracker.tasks.run_killtracker',
+    'schedule': crontab(minute='*/1'),
+}
+# Moon Mining
+CELERYBEAT_SCHEDULE['moonmining_run_regular_updates'] = {
+    'task': 'moonmining.tasks.run_regular_updates',
+    'schedule': crontab(minute='*/10'),
+}
+CELERYBEAT_SCHEDULE['moonmining_run_report_updates'] = {
+    'task': 'moonmining.tasks.run_report_updates',
+    'schedule': crontab(minute=30, hour='*/1'),
+}
+CELERYBEAT_SCHEDULE['moonmining_run_value_updates'] = {
+ 'task': 'moonmining.tasks.run_calculated_properties_update',
+ 'schedule': crontab(minute=30, hour=3)
+}
+# Memberaudit
+CELERYBEAT_SCHEDULE['memberaudit_run_regular_updates'] = {
+    'task': 'memberaudit.tasks.run_regular_updates',
+    'schedule': crontab(minute=0, hour='*/1'),
+}
+# AA RS To Discord
+CELERYBEAT_SCHEDULE["aa_rss_to_discord_fetch_rss"] = {
+    "task": "aa_rss_to_discord.tasks.fetch_rss",
+    "schedule": crontab(minute="*/5"),
+}
+
+## Settings for Allianceauth-Discordbot
+# Admin Commands
+ADMIN_DISCORD_BOT_CHANNELS = [111, 222, 333]
+# Sov Commands
+SOV_DISCORD_BOT_CHANNELS = [111, 222, 333]
+# Adm Commands
+ADM_DISCORD_BOT_CHANNELS = [111, 222, 333]
+
+DISCORD_BOT_SOV_STRUCTURE_OWNER_IDS = [1000169] # Centre for Advanced Studies example
+DISCORD_BOT_MEMBER_ALLIANCES = [111, 222, 333] # A list of alliances to be considered "Mains"
+
+DISCORD_BOT_ADM_REGIONS = [10000002] # The Forge Example
+DISCORD_BOT_ADM_SYSTEMS = [30000142] # Jita Example
+DISCORD_BOT_ADM_CONSTELLATIONS = [20000020] # Kimitoro Example
+
+## Insert AADiscordBot's logging into Django Logging config
+LOGGING['handlers']['bot_log_file']= {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'log/discord_bot.log'),
+            'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+        }
+LOGGING['loggers']['aadiscordbot'] = {'handlers': ['bot_log_file'],'level': 'DEBUG'}
+
+# configure the bots in-built cogs.
+DISCORD_BOT_COGS = ["aadiscordbot.cogs.about", # about the bot
+                    "aadiscordbot.cogs.admin", # Discord server admin helpers
+                    "aadiscordbot.cogs.members", # Member lookup commands
+                    "aadiscordbot.cogs.timers", # timer board integration
+                    "aadiscordbot.cogs.auth", # return auth url
+                    "aadiscordbot.cogs.sov", # some sov helpers
+                    "aadiscordbot.cogs.time", # whats the time Mr Eve Server
+                    "aadiscordbot.cogs.eastereggs", # some "fun" commands from ariel...
+                    "aadiscordbot.cogs.remind", # very Basic in memory reminder tool
+                    "aadiscordbot.cogs.reaction_roles" # auth group integrated reaction roles
+                   ]
+
+# Discord Configuration
+DISCORD_GUILD_ID = '{{ discord.guild_id }}'
+DISCORD_CALLBACK_URL = '{{ discord.callback_url }}'
+DISCORD_APP_ID = '{{ discord.app_id }}'
+DISCORD_APP_SECRET = '{{ discord.app_secret }}'
+DISCORD_BOT_TOKEN = '{{ discord.bot_token }}'
+DISCORD_SYNC_NAMES = {{ discord.sync_names }}
+
+CELERYBEAT_SCHEDULE['discord.update_all_usernames'] = {
+    'task': 'discord.update_all_usernames',
+    'schedule': crontab(minute=0, hour='*/12'),
 }

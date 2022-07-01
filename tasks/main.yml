@@ -39,6 +39,14 @@
       - django-eveuniverse
       - aa-structures
       - aa-structuretimers
+      - fittings
+      - aa-mailrelay
+      - aa-killtracker
+      - aa-moonmining
+#      - aa-discordnotify
+      - aa-memberaudit
+      - aa-rss-to-discord
+      - allianceauth-discordbot
 
 - name: Start MariaDB
   service:
@@ -59,7 +67,6 @@
   mysql_db:
     name: "{{ alliance_auth.db.name }}"
     login_user: root
-    login_password: "{{ mysql_root_password }}"
     login_host: localhost
     state: present
 
@@ -70,7 +77,6 @@
     priv: "{{ alliance_auth.db.name }}.*:ALL"
     host: localhost
     login_user: root
-    login_password: "{{ mysql_root_password }}"
     state: present
 
 - name: Run allianceauth start
@@ -81,10 +87,42 @@
     chdir: "{{ home_dir }}"
     creates: "{{ home_dir }}/{{ alliance_auth.app_name }}"
 
+- name: tweak celery.py if we install aa-discordbot
+  lineinfile:
+    path: "{{ app_dir }}/{{ alliance_auth.app_name }}/celery.py"
+    insertbefore: "# Load task modules from all registered Django app configs."
+    line: "app.conf.task_routes = {'aadiscordbot.tasks.*': {'queue': 'aadiscordbot'}}"
+    state: present
+#  when: something to be set to show aa-discordbot
+
+- name: get bot_conf.py for aa-discordbot
+  template:
+    src: files/bot_conf.py.j2
+    dest: "{{ bot_conf }}"
+#  when: something to be set to show aa-discordbot
+
+- name: Generate django seed if it doesn't exist
+  set_fact:
+    django_seed_value: "{{ lookup('community.general.random_string', length=64) }}"
+  when: ansible_local.aa.django.seed is undefined
+
+- name: Write django seed to fact file if it doesn't exist
+  copy:
+    dest: /etc/ansible/facts.d/aa.fact
+    content: |
+      [django]
+      seed={{ django_seed_value }}
+  when: ansible_local.aa.django.seed is undefined
+
+- name: Set django seed from fact file if it already exists
+  set_fact:
+    django_seed_value: "{{ ansible_local.aa.django.seed }}"
+  when:  ansible_local.aa.django.seed is defined
+
 - name: Deploy AA app config
   template:
     src: files/local.py.j2
-    dest: "{{ home_dir }}/{{ alliance_auth.app_name }}/{{ alliance_auth.app_name }}/settings/local.py"
+    dest: "{{ app_dir }}/{{ alliance_auth.app_name }}/settings/local.py"
   notify:
     - restart apps
 
@@ -132,9 +170,20 @@
     state: directory
     mode: '0755'
 
+- name: Check if ssl key exists
+  stat:
+    path: "/etc/ssl/self/{{ alliance_auth.http_host }}.key"
+  register: ssl_key
+
+- name: Check if ssl cert exists
+  stat:
+    path: "/etc/ssl/self/{{ alliance_auth.http_host }}.crt"
+  register: ssl_cert
+
 - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
   community.crypto.openssl_privatekey:
     path: "/etc/ssl/self/{{ alliance_auth.http_host }}.key"
+  when: not ssl_key.stat.exists
 
 - name: Generate an OpenSSL Certificate Signing Request
   become: yes
@@ -142,6 +191,7 @@
     path: "/etc/ssl/self/{{ alliance_auth.http_host }}.csr"
     privatekey_path: "/etc/ssl/self/{{ alliance_auth.http_host }}.key"
     common_name: "{{ alliance_auth.http_host }}"
+  when: not ssl_cert.stat.exists
 
 - name: Generate a Self Signed OpenSSL certificate
   become: yes
@@ -150,6 +200,15 @@
     privatekey_path: "/etc/ssl/self/{{ alliance_auth.http_host }}.key"
     csr_path: "/etc/ssl/self/{{ alliance_auth.http_host }}.csr"
     provider: selfsigned
+  when: not ssl_cert.stat.exists
+
+- name: copy the nginx config file
+  become: yes
+  template:
+    src: files/aa-nginx.conf.j2
+    dest: "/etc/nginx/sites-available/{{ alliance_auth.app_name }}.conf"
+  notify:
+    - restart nginx
 
 - name: create symlink
   become: yes
@@ -157,14 +216,6 @@
     src: "/etc/nginx/sites-available/{{ alliance_auth.app_name }}.conf"
     dest: "/etc/nginx/sites-enabled/{{ alliance_auth.app_name }}"
     state: link
-  notify:
-    - restart nginx
-
-- name: copy the nginx config file
-  become: yes
-  copy:
-    src: files/nginx.conf
-    dest: "/etc/nginx/sites-available/{{ alliance_auth.app_name }}.conf"
   notify:
     - restart nginx
 

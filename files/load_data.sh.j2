@@ -11,3 +11,13 @@ for task in "$@"; do
     echo "Skipping ${task}"
   fi
 done
+
+cd {{ app_dir }}
+
+if [ ! -f "{{ lock_dir }}/load_price" ]; then
+  echo "Loading pricing data from ESJ"
+  {{ celery }} -A {{ alliance_auth.app_name }} call moonmining.tasks.run_calculated_properties_update
+  touch "{{ lock_dir }}/load_price"
+else
+  echo "Skipping loading price from ESI"
+fi

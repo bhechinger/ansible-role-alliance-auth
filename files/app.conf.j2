@@ -27,14 +27,24 @@ priority=998
 [program:gunicorn]
 user={{ alliance_auth.user }}
 directory={{ app_dir }}
-command={{ gunicorn }} {{ alliance_auth.app_name }}.wsgi --workers=3 --timeout 120
+command={{ gunicorn }} {{ alliance_auth.app_name }}.wsgi --workers=3 --bind=127.0.0.1:{{ alliance_auth.app_port }} --timeout 120
 stdout_logfile={{ app_dir }}/log/gunicorn.log
 stderr_logfile={{ app_dir }}/log/gunicorn.log
 autostart=true
 autorestart=true
 stopsignal=INT
 
+[program:authbot]
+command={{ python }} {{ bot_conf }}
+directory={{ app_dir }}
+user={{ alliance_auth.user }}
+numprocs=1
+autostart=true
+autorestart=true
+stopwaitsecs=600
+stdout_logfile={{ app_dir }}/log/authbot.log
+stderr_logfile={{ app_dir }}/log/authbot.log
 
 [group:{{ alliance_auth.app_name }}]
-programs=beat,worker,gunicorn
+programs=beat,worker,gunicorn,authbot
 priority=999

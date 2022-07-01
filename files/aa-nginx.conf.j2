@@ -1,0 +1,24 @@
+server {
+    listen 443 ssl;
+    server_name {{ alliance_auth.http_host }};
+
+    ssl_certificate     /etc/ssl/self/{{ alliance_auth.http_host }}.crt;
+    ssl_certificate_key /etc/ssl/self/{{ alliance_auth.http_host }}.key;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+
+    location /static {
+        alias /var/www/{{ alliance_auth.app_name }}/static;
+        autoindex off;
+    }
+
+    location /robots.txt {
+        alias /var/www/{{ alliance_auth.app_name }}/static/robots.txt;
+    }
+
+    # Gunicorn config goes below
+    location / {
+        include proxy_params;
+        proxy_pass http://127.0.0.1:{{ alliance_auth.app_port }};
+    }
+}
